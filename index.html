@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>Simple Web Page</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Input Tautan</h1>
+        <form id="linkForm">
+            <div class="form-group">
+                <label for="linkInput">Masukkan Link</label>
+                <input type="text" class="form-control" id="linkInput" placeholder="https://example.com">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+
+    <div class="container mt-5">
+        <h1>Daftar Tautan</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">No</th>
+                    <th scope="col">Tautan</th>
+                </tr>
+            </thead>
+            <tbody id="linkTable">
+                <!-- Tautan yang dimasukkan akan ditampilkan di sini -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Bootstrap JS dan jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Mengambil data dari Local Storage saat halaman dimuat ulang
+            var savedLinks = JSON.parse(localStorage.getItem("links")) || [];
+            var linkTable = $("#linkTable");
+
+            // Menampilkan data yang diambil dari Local Storage
+            for (var i = 0; i < savedLinks.length; i++) {
+                var newRow = $("<tr><td></td><td><a href='#'></a></td></tr>");
+                newRow.find("td:first").text(i + 1);
+                newRow.find("td:last a").attr("href", savedLinks[i]).text(savedLinks[i]);
+                linkTable.append(newRow);
+            }
+
+            // Menambahkan link-link yang Anda berikan
+            var initialLinks = [
+                "https://dooood.com/d/t4v8d66o6zpins3feyrozas40u0n63vb",
+                "https://dooood.com/d/bubp7mqketnjbrhxjciarpsk47iaux85",
+                "https://dooood.com/d/jqza7v9xinveexari1d2nukv5r7zm2b2",
+                "https://dooood.com/d/zcoey26i0y2pxrp5siiy7rovgvr97vid",
+                "https://dooood.com/d/3rpgx9x63pvvdokgavukcy7y2vug9vb7",
+                "https://dooood.com/d/lgtzpnxzbfvg8daiarkrhanc2pdsg7hc",
+                "https://dooood.com/d/5jpds9zu6h6gwhky795mmedtbfid5y25",
+                "https://dooood.com/d/9a82i5us68phq690k5kuh1wamilrzyyq",
+                "https://dooood.com/d/awvgt23vojmeksti5c454rf63tecm54b",
+                "https://dooood.com/d/6kio2v77ucbla4lfemg9c5uh2g4dpr6g",
+                "https://dooood.com/d/behyp47ymn3pat6pl6pf7y672hanqosq",
+                "https://dooood.com/d/lf3aubpyuo616k3klcaqmbpudiven0t6",
+                "https://dooood.com/d/5pmbfex8tzpb5h1iky8fui6yu60krdlj",
+                "https://dooood.com/d/70foe7dnn0a5ehz5ed7wizvvwiydd3aw",
+                "https://dooood.com/d/i02qcaosvlp7oczic7z3de72vowz8m7s",
+                "https://dooood.com/d/21uaawiwndfsp4fvfb8pr0wywu8lqhjc",
+                "https://dooood.com/d/vtatr79nqz1075ghdmw1yk9f2rkt3avr",
+                "https://dooood.com/d/p4clyyu6k7jps0fe458p08z4apnlnmas"
+            ];
+
+            for (var j = 0; j < initialLinks.length; j++) {
+                savedLinks.push(initialLinks[j]);
+
+                var newRow = $("<tr><td></td><td><a href='#'></a></td></tr>");
+                newRow.find("td:first").text(savedLinks.length);
+                newRow.find("td:last a").attr("href", initialLinks[j]).text(initialLinks[j]);
+                linkTable.append(newRow);
+            }
+
+            localStorage.setItem("links", JSON.stringify(savedLinks));
+
+            $("#linkForm").submit(function(event) {
+                event.preventDefault();
+                var link = $("#linkInput").val();
+                if (link.trim() !== "") {
+                    savedLinks.push(link);
+                    localStorage.setItem("links", JSON.stringify(savedLinks));
+
+                    var newRow = $("<tr><td></td><td><a href='#'></a></td></tr>");
+                    newRow.find("td:first").text(savedLinks.length);
+                    newRow.find("td:last a").attr("href", link).text(link);
+                    linkTable.append(newRow);
+
+                    $("#linkInput").val("");
+                }
+            });
+        });
+    </script>
+</body>
+</html>

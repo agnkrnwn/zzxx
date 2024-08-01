@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Kisah Nabi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a"}
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <a href="nabi.html" class="text-blue-500 dark:text-blue-400 hover:underline">&larr; Kembali ke Daftar</a>
+            <button id="darkModeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                <svg class="w-6 h-6 text-gray-800 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="nabiDetail" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <!-- Detail nabi akan dimasukkan di sini -->
+        </div>
+    </div>
+
+    <script>
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+
+        darkModeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const nabiId = parseInt(urlParams.get('id'));
+
+        fetch('api/kisahnabi.json')
+            .then(response => response.json())
+            .then(data => {
+                const nabi = data[nabiId];
+                const nabiDetailElement = document.getElementById('nabiDetail');
+                nabiDetailElement.innerHTML = `
+                    <div class="flex flex-col md:flex-row items-center mb-6">
+                        <img src="${nabi.image_url}" alt="${nabi.name}" class="w-32 h-32 rounded-full object-cover mr-0 md:mr-6 mb-4 md:mb-0">
+                        <h1 class="text-3xl font-bold text-gray-800 dark:text-white text-center md:text-left">${nabi.name}</h1>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-300">Tahun Kelahiran:</p>
+                            <p class="text-gray-600 dark:text-gray-400">${nabi.thn_kelahiran}</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-300">Usia:</p>
+                            <p class="text-gray-600 dark:text-gray-400">${nabi.usia} tahun</p>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-700 dark:text-gray-300">Tempat:</p>
+                            <p class="text-gray-600 dark:text-gray-400">${nabi.tmp}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Deskripsi:</h2>
+                        <div id="description" class="text-gray-700 dark:text-gray-300"></div>
+                    </div>
+                `;
+
+                // Memformat deskripsi
+                const descriptionElement = document.getElementById('description');
+                const paragraphs = nabi.description.split('\n\n');
+                paragraphs.forEach(paragraph => {
+                    const p = document.createElement('p');
+                    p.textContent = paragraph;
+                    p.className = 'mb-4';
+                    descriptionElement.appendChild(p);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    </script>
+</body>
+</html>

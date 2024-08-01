@@ -80,11 +80,17 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-xl md:max-w-md">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300">Settings</h2>
-                <button id="darkModeToggle"
-                    class="p-2  w-10 h-10 bg-primary-600 text-white rounded-full hover:bg-primary-700 dark:bg-primary-400 dark:text-gray-800 dark:hover:bg-primary-500 transition-all">
-                    <i id="darkModeIcon" class="fas fa-moon"></i>
-                    <span class="sr-only">Toggle Dark Mode</span>
-                </button>
+                <div class="flex items-center">
+                    <a href="nabi.html" class="mr-4 p-2 w-10 h-10 bg-primary-600 text-white rounded-full hover:bg-primary-700 dark:bg-primary-400 dark:text-gray-800 dark:hover:bg-primary-500 transition-all">
+                        <i class="fas fa-link"></i>
+                        <span class="sr-only">Link to Nabi</span>
+                    </a>
+                    <button id="darkModeToggle"
+                        class="p-2 w-10 h-10 bg-primary-600 text-white rounded-full hover:bg-primary-700 dark:bg-primary-400 dark:text-gray-800 dark:hover:bg-primary-500 transition-all">
+                        <i id="darkModeIcon" class="fas fa-moon"></i>
+                        <span class="sr-only">Toggle Dark Mode</span>
+                    </button>
+                </div>
             </div>
 
             <div id="prayerTimes" class="bg-gray-100 dark:bg-gray-700 p-4 font-semibold rounded-lg">
@@ -165,7 +171,7 @@
     </div>
     <script src="./asset/js/theme-switcher.js"></script>
     <script src="./asset/js/prayer-times.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="./asset/js/html2canvas.min.js"></script>
     <!-- <script src="./finalcode.js"></script> -->
     <!-- <script src="/bkqur2.js"></script> -->
      <script src="./asset/js/alquran1.js"></script>

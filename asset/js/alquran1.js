@@ -1,7 +1,7 @@
 let selectedQari = "05"; // Default to Misyari Rasyid Al-Afasi
 let allSurahs = [];
 let currentSurah = null;
-let bookmarks = JSON.parse(localStorage.getItem("quranBookmarks-009812344")) || [];
+let bookmarks = JSON.parse(localStorage.getItem("quranBookmarks-009812344332")) || [];
 console.log("Updated bookmarks:", bookmarks);
 let fonts = {};
 let currentFont = localStorage.getItem('selectedFont') || 'default';
@@ -40,7 +40,7 @@ function toggleBookmark(surah, ayatNumber) {
     message = `Bookmark untuk Surah ${surah.nomor} Ayat ${ayatNumber} telah ditambahkan.`;
     isBookmarked = true;
   }
-  localStorage.setItem("quranBookmarks-009812344", JSON.stringify(bookmarks));
+  localStorage.setItem("quranBookmarks-009812344332", JSON.stringify(bookmarks));
   updateBookmarkButtons(surah);
   return { isBookmarked, message };
 }

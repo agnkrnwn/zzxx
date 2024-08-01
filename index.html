@@ -171,6 +171,19 @@
      <script src="./asset/js/alquran1.js"></script>
 
     <script>
+
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        }
+
+        menuToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
         document.getElementById('openModalButton').addEventListener('click', function () {
             document.getElementById('myModal').classList.remove('hidden');
         });

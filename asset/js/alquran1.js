@@ -326,6 +326,8 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
   }
 
+  //////
+
   window.fetchSurahDetail = async function (nomorSurah) {
     try {
       if (surahCache.has(nomorSurah)) {
@@ -336,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   
       const [surahResponse, tafsirResponse, tajweedResponse] = await Promise.all([
-        fetch(`/api/qurandata/${nomorSurah}.json`),
+        fetch(`/api/qurandataupdate/${nomorSurah}.json`),
         fetch(`/api/tafsir/${nomorSurah}.json`),
         fetch('/api/tajweed/tajweed.json')
       ]);

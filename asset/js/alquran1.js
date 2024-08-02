@@ -663,6 +663,38 @@ function playIndonesianAudioAutoPlay(surahNumber, ayatIndex) {
     };
 }
 
+function playIndonesianAudio(surahNumber, ayatNumber, button) {
+  const audioSrc = getIndonesianAudioUrl(surahNumber, ayatNumber);
+  const audio = new Audio(audioSrc);
+
+  if (currentAudio) {
+    currentAudio.pause();
+    const prevButton = document.querySelector('.play-indo-audio-btn[data-playing="true"]');
+    if (prevButton) {
+      prevButton.innerHTML = '<i class="fas fa-language"></i>';
+      prevButton.removeAttribute("data-playing");
+    }
+  }
+
+  audio.play();
+  button.innerHTML = '<i class="fas fa-pause"></i>';
+  button.setAttribute("data-playing", "true");
+
+  audio.onended = () => {
+    button.innerHTML = '<i class="fas fa-language"></i>';
+    button.removeAttribute("data-playing");
+    currentAudio = null;
+  };
+
+  audio.onerror = () => {
+    console.error(`Error playing Indonesian audio for Surah ${surahNumber}, Ayat ${ayatNumber}`);
+    button.innerHTML = '<i class="fas fa-language"></i>';
+    button.removeAttribute("data-playing");
+    currentAudio = null;
+  };
+
+  currentAudio = audio;
+}
 
   function highlightCurrentAyat(ayatIndex) {
     const ayatElements = document.querySelectorAll("[data-ayat]");
@@ -1091,16 +1123,38 @@ function downloadSurahDetail(surah) {
   `;
 
   const bismillah = document.createElement("p");
-  // bismillah.textContent = "بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ";
   bismillah.style.fontSize = "60px";
   bismillah.style.fontFamily = '"LPMQ Isep Misbah", Arial';
   bismillah.style.marginTop = "40px";
 
-  //contentWrapper.appendChild(bismillah);
   contentWrapper.appendChild(surahName);
   contentWrapper.appendChild(surahInfo);
 
+  // Tambahkan tanda panah dan tulisan "Geser"
+  const arrowContainer = document.createElement("div");
+  arrowContainer.style.position = "absolute";
+  arrowContainer.style.top = "20px";
+  arrowContainer.style.right = "20px";
+  arrowContainer.style.display = "flex";
+  arrowContainer.style.flexDirection = "column";
+  arrowContainer.style.alignItems = "center";
+
+  const arrow = document.createElement("div");
+  arrow.innerHTML = "&#8594;"; // Tanda panah ke kanan
+  arrow.style.fontSize = "60px";
+  arrow.style.color = "white";
+
+  const geserText = document.createElement("p");
+  geserText.textContent = "Geser";
+  geserText.style.fontSize = "36px";
+  geserText.style.margin = "0";
+  geserText.style.color = "white";
+
+  arrowContainer.appendChild(arrow);
+  arrowContainer.appendChild(geserText);
+
   tempDiv.appendChild(contentWrapper);
+  tempDiv.appendChild(arrowContainer);
 
   document.body.appendChild(tempDiv);
 

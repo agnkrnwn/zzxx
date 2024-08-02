@@ -632,6 +632,39 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 }
 
+function playIndonesianAudio(surahNumber, ayatNumber, button) {
+  const audioSrc = getIndonesianAudioUrl(surahNumber, ayatNumber);
+  const audio = new Audio(audioSrc);
+
+  if (currentAudio) {
+    currentAudio.pause();
+    const prevButton = document.querySelector('.play-indo-audio-btn[data-playing="true"]');
+    if (prevButton) {
+      prevButton.innerHTML = '<i class="fas fa-language"></i>';
+      prevButton.removeAttribute("data-playing");
+    }
+  }
+
+  audio.play();
+  button.innerHTML = '<i class="fas fa-pause"></i>';
+  button.setAttribute("data-playing", "true");
+
+  audio.onended = () => {
+    button.innerHTML = '<i class="fas fa-language"></i>';
+    button.removeAttribute("data-playing");
+    currentAudio = null;
+  };
+
+  audio.onerror = () => {
+    console.error(`Error playing Indonesian audio for Surah ${surahNumber}, Ayat ${ayatNumber}`);
+    button.innerHTML = '<i class="fas fa-language"></i>';
+    button.removeAttribute("data-playing");
+    currentAudio = null;
+  };
+
+  currentAudio = audio;
+}
+
 function playIndonesianAudioAutoPlay(surahNumber, ayatIndex) {
     const includeIndonesianAudio = document.getElementById("includeIndonesianAudio").checked;
     if (!includeIndonesianAudio) {

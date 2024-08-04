@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M3U Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">M3U Player</h1>
+        <div id="playlist" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        <div class="mt-8">
+            <h2 id="current-channel" class="text-xl font-semibold mb-2"></h2>
+            <video id="video-player" controls class="w-full" poster=""></video>
+        </div>
+    </div>
+
+    <script>
+        const playlistElement = document.getElementById('playlist');
+        const videoPlayer = document.getElementById('video-player');
+        const currentChannelElement = document.getElementById('current-channel');
+
+        async function loadPlaylist() {
+            try {
+                const response = await fetch('m3u/playlist.m3u');
+                const data = await response.text();
+                const lines = data.split('\n');
+                
+                let currentInfo = null;
+
+                lines.forEach(line => {
+                    line = line.trim();
+                    if (line.startsWith('#EXTINF:')) {
+                        const infoRegex = /#EXTINF:-1\s+group-title="([^"]*)"(?:\s+tvg-logo="([^"]*)")?,\s*(.*)/;
+                        const match = line.match(infoRegex);
+                        if (match) {
+                            currentInfo = {
+                                groupTitle: match[1],
+                                logo: match[2],
+                                name: match[3]
+                            };
+                        }
+                    } else if (line && !line.startsWith('#') && currentInfo) {
+                        const channelDiv = document.createElement('div');
+                        channelDiv.className = 'bg-white rounded-lg shadow-md p-4 flex flex-col items-center';
+                        
+                        if (currentInfo.logo) {
+                            const img = document.createElement('img');
+                            img.src = currentInfo.logo;
+                            img.alt = currentInfo.name;
+                            img.className = 'w-24 h-24 object-contain mb-2';
+                            channelDiv.appendChild(img);
+                        }
+
+                        const name = document.createElement('p');
+                        name.textContent = currentInfo.name;
+                        name.className = 'text-center font-semibold mb-2';
+                        channelDiv.appendChild(name);
+
+                        const button = document.createElement('button');
+                        button.textContent = 'Play';
+                        button.className = 'bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600';
+                        button.onclick = () => {
+                            videoPlayer.src = line;
+                            videoPlayer.poster = currentInfo.logo || '';
+                            currentChannelElement.textContent = `Now Playing: ${currentInfo.name}`;
+                            videoPlayer.play();
+                        };
+                        channelDiv.appendChild(button);
+
+                        playlistElement.appendChild(channelDiv);
+                        currentInfo = null;
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading playlist:', error);
+            }
+        }
+
+        loadPlaylist();
+    </script>
+</body>
+</html>

@@ -174,7 +174,7 @@
     <script src="./asset/js/html2canvas.min.js"></script>
     <!-- <script src="./finalcode.js"></script> -->
     <!-- <script src="/bkqur2.js"></script> -->
-     <script src="./asset/js/ass.js"></script>
+     <script src="./asset/js/alquran1.js"></script>
 
     <script>
 
@@ -197,6 +197,13 @@
         document.getElementById('closeModalButton').addEventListener('click', function () {
             document.getElementById('myModal').classList.add('hidden');
         });
+
+        function showRandomSurah() {
+            const randomSurahNumber = Math.floor(Math.random() * 114) + 1;
+            fetchSurahDetail(randomSurahNumber);
+        }
+
+        document.addEventListener('DOMContentLoaded', showRandomSurah);
 
         
     </script>

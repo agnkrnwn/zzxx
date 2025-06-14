@@ -6,6 +6,11 @@ console.log("Updated bookmarks:", bookmarks);
 let fonts = {};
 let currentFont = localStorage.getItem('selectedFont') || 'default';
 
+
+
+// Call this function when the page loads
+
+
 function updateQariSelection() {
   const qariSelect = document.getElementById("qariSelect");
   selectedQari = qariSelect.value;
@@ -323,21 +328,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   //////
 
-  async function fetchSurahDetail(nomorSurah) {
+  window.fetchSurahDetail = async function (nomorSurah) {
     try {
       if (surahCache.has(nomorSurah)) {
-        const { surahData, tajweedData } = surahCache.get(nomorSurah);
-        displaySurahDetail(surahData, tajweedData);
+        const { surahData, tafsirData, tajweedData } = surahCache.get(nomorSurah);
+        displaySurahDetail(surahData, tafsirData, tajweedData);
         surahDetail.scrollIntoView({ behavior: "smooth" });
         return;
       }
   
-      const [surahResponse, tajweedResponse] = await Promise.all([
+      const [surahResponse, tafsirResponse, tajweedResponse] = await Promise.all([
         fetch(`/api/qurandataupdate/${nomorSurah}.json`),
+        fetch(`/api/tafsir/${nomorSurah}.json`),
         fetch('/api/tajweed/tajweed.json')
       ]);
   
-      let surahData, tajweedData;
+      let surahData, tafsirData, tajweedData;
   
       try {
         surahData = await surahResponse.json();
@@ -347,13 +353,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   
       try {
+        tafsirData = await tafsirResponse.json();
+      } catch (error) {
+        console.error("Error parsing tafsir data:", error);
+        tafsirData = { code: 500, message: "Error parsing tafsir data" };
+      }
+  
+      try {
         tajweedData = await tajweedResponse.json();
       } catch (error) {
         console.error("Error parsing tajweed data:", error);
         tajweedData = { code: 500, message: "Error parsing tajweed data" };
       }
   
-      if (surahData.code === 200 && tajweedData) {
+      if (surahData.code === 200 && tafsirData.code === 200 && tajweedData) {
         currentSurah = surahData.data;
         console.log("Set currentSurah:", currentSurah);
         updateDocumentTitle(currentSurah);
@@ -363,14 +376,17 @@ document.addEventListener("DOMContentLoaded", () => {
   
         surahCache.set(nomorSurah, {
           surahData: surahData.data,
+          tafsirData: tafsirData.data,
           tajweedData: filteredTajweedData
         });
-        displaySurahDetail(surahData.data, filteredTajweedData);
+        displaySurahDetail(surahData.data, tafsirData.data, filteredTajweedData);
         surahDetail.scrollIntoView({ behavior: "smooth" });
       } else {
         let errorMessage = "";
         if (surahData.code !== 200)
           errorMessage += `Gagal memuat detail surah: ${surahData.message}. `;
+        if (tafsirData.code !== 200)
+          errorMessage += `Gagal memuat tafsir: ${tafsirData.message}. `;
         if (!tajweedData)
           errorMessage += `Gagal memuat data tajweed. `;
         surahDetail.innerHTML = `<p class="text-red-500">${errorMessage}</p>`;
@@ -382,14 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
       updateDocumentTitle(null);
     }
-  }
-
-  function showRandomSurah() {
-    const randomSurahNumber = Math.floor(Math.random() * 114) + 1;
-    fetchSurahDetail(randomSurahNumber);
-  }
-
-  showRandomSurah();
+  };
 
   function updateDocumentTitle(surah) {
     if (surah) {
@@ -724,54 +733,58 @@ function playIndonesianAudio(surahNumber, ayatNumber, button) {
   }
 
   let currentUtterance = null;
-let isPaused = false;
 
-
-  function speakTafsir(text, button) {
-    console.log("Fungsi speakTafsir dipanggil dengan teks:", text);
-    if (!('speechSynthesis' in window)) {
-      alert("Maaf, browser Anda tidak mendukung fitur text-to-speech.");
-      return;
-    }
-  
+function speakTafsir(text, button) {
+  if ('speechSynthesis' in window) {
+    // Hentikan pembacaan yang sedang berlangsung
     if (speechSynthesis.speaking) {
-      if (isPaused) {
-        speechSynthesis.resume();
-        isPaused = false;
-        button.innerHTML = '<i class="fas fa-pause mr-2"></i> Jeda Tafsir';
-      } else {
-        speechSynthesis.pause();
-        isPaused = true;
-        button.innerHTML = '<i class="fas fa-play mr-2"></i> Lanjutkan Tafsir';
-      }
-      return;
-    }
-  
-    // Batalkan utterance yang sedang berjalan jika ada
-    if (currentUtterance) {
       speechSynthesis.cancel();
+      if (currentUtterance === text) {
+        button.innerHTML = '<i class="fas fa-volume-up mr-2"></i> Bacakan Tafsir';
+        currentUtterance = null;
+        return;
+      }
     }
-  
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'id-ID';
-  
-    utterance.onend = () => {
-      button.innerHTML = '<i class="fas fa-volume-up mr-2"></i> Bacakan Tafsir';
-      currentUtterance = null;
-      isPaused = false;
-    };
-  
-    utterance.onerror = (event) => {
-      console.error('SpeechSynthesisUtterance error', event);
-      button.innerHTML = '<i class="fas fa-volume-up mr-2"></i> Bacakan Tafsir';
-      currentUtterance = null;
-      isPaused = false;
-    };
-  
-    speechSynthesis.speak(utterance);
-    currentUtterance = utterance;
+
+    const maxLength = 200; // Batasan panjang teks
+    const textChunks = [];
+
+    // Pecah teks menjadi beberapa bagian
+    for (let i = 0; i < text.length; i += maxLength) {
+      textChunks.push(text.slice(i, i + maxLength));
+    }
+
+    let chunkIndex = 0;
+
+    function speakNextChunk() {
+      if (chunkIndex < textChunks.length) {
+        const utterance = new SpeechSynthesisUtterance(textChunks[chunkIndex]);
+        utterance.lang = 'id-ID';
+
+        utterance.onend = () => {
+          chunkIndex++;
+          speakNextChunk();
+        };
+
+        utterance.onerror = (event) => {
+          console.error('SpeechSynthesisUtterance error', event);
+          button.innerHTML = '<i class="fas fa-volume-up mr-2"></i> Bacakan Tafsir';
+        };
+
+        speechSynthesis.speak(utterance);
+      } else {
+        button.innerHTML = '<i class="fas fa-volume-up mr-2"></i> Bacakan Tafsir';
+        currentUtterance = null;
+      }
+    }
+
     button.innerHTML = '<i class="fas fa-pause mr-2"></i> Jeda Tafsir';
+    currentUtterance = text;
+    speakNextChunk();
+  } else {
+    alert("Maaf, browser Anda tidak mendukung fitur text-to-speech.");
   }
+}
 
 function convertToArabicNumerals(number) {
   const arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -859,7 +872,7 @@ function displayAyatWithTafsir(ayat, tafsir, container, tajweedData) {
     const ayatList = document.getElementById("ayatList");
     const fragment = document.createDocumentFragment();
   
-    // Add Bismillah at the beginning (except for Surah At-Taubah) // // ///////////  //
+    // Add Bismillah at the beginning (except for Surah At-Taubah)
     if (currentSurah.nomor !== 9) {
       const bismillahDiv = document.createElement("div");
       bismillahDiv.className = "border-b border-gray-200 dark:border-gray-700 pb-4";
@@ -883,20 +896,13 @@ function displayAyatWithTafsir(ayat, tafsir, container, tajweedData) {
       fragment.appendChild(bismillahDiv);
     }
 
-    ayat.forEach((a, index) => {
-        const div = document.createElement("div");
-        div.className = "border-b border-gray-200 dark:border-gray-700 pb-4";
-        div.setAttribute("data-ayat", a.nomorAyat);
-    
-        let tajweedRules = [];
-        if (tajweedData && Array.isArray(tajweedData)) {
-          const tajweedItem = tajweedData.find(t => t.ayah === a.nomorAyat);
-          if (tajweedItem && tajweedItem.annotations) {
-            tajweedRules = tajweedItem.annotations;
-          }
-        }
-    
-        const styledArabicText = applyTajweedStyling(a.teksArab, tajweedRules);
+  ayat.forEach((a, index) => {
+    const div = document.createElement("div");
+    div.className = "border-b border-gray-200 dark:border-gray-700 pb-4";
+    div.setAttribute("data-ayat", a.nomorAyat);
+
+    const tajweedRules = tajweedData.find(t => t.ayah === a.nomorAyat)?.annotations || [];
+    const styledArabicText = applyTajweedStyling(a.teksArab, tajweedRules);
 
     div.innerHTML = `
       <div class="flex justify-between items-center mb-2">
@@ -930,12 +936,12 @@ function displayAyatWithTafsir(ayat, tafsir, container, tajweedData) {
       <button class="toggle-tafsir-btn mt-2 text-primary-600 dark:text-primary-400 hover:underline">
         Show Tafsir <i class="fas fa-chevron-down ml-1"></i>
       </button>
-     <div class="tafsir-container hidden mt-2">
+      <div class="tafsir-container hidden mt-2">
         <button class="speak-tafsir-btn text-white px-3 py-1 rounded-lg hover:bg-primary-600 transition-colors duration-200 mt-2 mb-2">
           <i class="fas fa-volume-up mr-2"></i> Bacakan Tafsir
         </button>
         <p class="text-gray-600 dark:text-gray-400">
-          ${a.tafsir ? a.tafsir.split('\n').map(line => `
+          ${tafsir[index] ? tafsir[index].teks.split('\n').map(line => `
             <span class="block mb-2">${line}</span>
           `).join('') : 'Tafsir tidak tersedia'}
         </p>
@@ -1092,11 +1098,26 @@ function downloadSurahDetail(surah) {
   const tempDiv = document.createElement("div");
   tempDiv.style.width = "1080px";
   tempDiv.style.height = "1920px";
-  tempDiv.style.backgroundColor = "#26282A";
+  tempDiv.style.background = "linear-gradient(180deg, #1a1c1e 0%, #26282A 100%)";
   tempDiv.style.color = "white";
   tempDiv.style.fontFamily = "Poppins, sans-serif";
   tempDiv.style.position = "relative";
   tempDiv.style.overflow = "hidden";
+
+  // Simple decorative lines
+  const decorLines = document.createElement("div");
+  decorLines.style.position = "absolute";
+  decorLines.style.top = "0";
+  decorLines.style.left = "0";
+  decorLines.style.width = "100%";
+  decorLines.style.height = "100%";
+  decorLines.style.opacity = "0.15";
+  decorLines.innerHTML = `
+    <div style="position: absolute; top: 20%; left: 10%; width: 200px; height: 2px; background: linear-gradient(90deg, #FFD700, transparent);"></div>
+    <div style="position: absolute; top: 80%; right: 10%; width: 250px; height: 2px; background: linear-gradient(90deg, transparent, #FFD700);"></div>
+    <div style="position: absolute; top: 50%; left: 5%; width: 100px; height: 2px; background: #87CEEB; transform: rotate(90deg);"></div>
+    <div style="position: absolute; top: 50%; right: 5%; width: 100px; height: 2px; background: #87CEEB; transform: rotate(90deg);"></div>
+  `;
 
   const contentWrapper = document.createElement("div");
   contentWrapper.style.position = "absolute";
@@ -1104,51 +1125,104 @@ function downloadSurahDetail(surah) {
   contentWrapper.style.left = "50%";
   contentWrapper.style.transform = "translate(-50%, -50%)";
   contentWrapper.style.width = "900px";
-  contentWrapper.textAlign = "center";
+  contentWrapper.style.textAlign = "center";
 
+  // Nama Surah - BESAR dan mencolok
   const surahName = document.createElement("h1");
-  surahName.textContent = `${surah.namaLatin} (${surah.nama})`;
-  surahName.style.fontSize = "60px";
-  surahName.style.marginBottom = "40px";
+  surahName.textContent = `${surah.namaLatin}`;
+  surahName.style.fontSize = "90px";
+  surahName.style.fontWeight = "900";
+  surahName.style.color = "#FFD700";
+  surahName.style.marginBottom = "20px";
+  surahName.style.textShadow = "0 0 30px rgba(255, 217, 0, 0.6)";
+  surahName.style.letterSpacing = "2px";
 
-  const surahInfo = document.createElement("div");
-  surahInfo.innerHTML = `
-    <p style="font-size: 36px; margin-bottom: 20px; margin-bottom: 20px;">Arti: ${surah.arti}</p>
-    <p style="font-size: 36px; margin-bottom: 20px;">Jumlah Ayat: ${surah.jumlahAyat}</p>
-    <p style="font-size: 36px; margin-bottom: 40px;">Tempat Turun: ${surah.tempatTurun}</p>
+  // Nama Arab
+  const surahArabic = document.createElement("h2");
+  surahArabic.textContent = `${surah.nama}`;
+  surahArabic.style.fontSize = "56px";
+  surahArabic.style.fontWeight = "400";
+  surahArabic.style.color = "#FFFFFF";
+  surahArabic.style.marginBottom = "60px";
+  surahArabic.style.textShadow = "0 2px 10px rgba(0, 0, 0, 0.7)";
+
+  // Garis pembatas simple
+  const divider = document.createElement("div");
+  divider.style.width = "400px";
+  divider.style.height = "4px";
+  divider.style.background = "linear-gradient(90deg, transparent, #FFD700, #FFA500, #FFD700, transparent)";
+  divider.style.margin = "0 auto 60px auto";
+  divider.style.borderRadius = "2px";
+
+  // Info section - layout vertical yang bersih
+  const artiSection = document.createElement("div");
+  artiSection.style.marginBottom = "50px";
+  artiSection.innerHTML = `
+    <div style="font-size: 32px; color: #87CEEB; font-weight: 600; margin-bottom: 15px; letter-spacing: 1px;">ARTI</div>
+    <div style="font-size: 60px; font-weight: 900; color:rgb(230, 230, 230); text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);">"${surah.arti}"</div>
+    
   `;
 
-  const bismillah = document.createElement("p");
-  bismillah.style.fontSize = "60px";
-  bismillah.style.fontFamily = '"LPMQ Isep Misbah", Arial';
-  bismillah.style.marginTop = "40px";
+  const ayatSection = document.createElement("div");
+  ayatSection.style.marginBottom = "40px";
+  ayatSection.innerHTML = `
+    <div style="font-size: 32px; color: #87CEEB; font-weight: 600; margin-bottom: 15px; letter-spacing: 1px;">JUMLAH AYAT</div>
+    <div style="font-size: 48px; font-weight: 600; color: #FFFFFF; line-height: 1.3; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);">${surah.jumlahAyat}</div>
+  `;
+
+  const tempatSection = document.createElement("div");
+  tempatSection.innerHTML = `
+    <div style="font-size: 32px; color: #87CEEB; font-weight: 600; margin-bottom: 15px; letter-spacing: 1px;">TEMPAT TURUN</div>
+    <div style="font-size: 52px; font-weight: 700; color: #FFFFFF; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);">${surah.tempatTurun}</div>
+  `;
 
   contentWrapper.appendChild(surahName);
-  contentWrapper.appendChild(surahInfo);
+  contentWrapper.appendChild(surahArabic);
+  contentWrapper.appendChild(divider);
+  contentWrapper.appendChild(artiSection);
+  contentWrapper.appendChild(ayatSection);
+  contentWrapper.appendChild(tempatSection);
 
-  // Tambahkan tanda panah dan tulisan "Geser"
+  // Arrow yang lebih simple tapi eye-catching
   const arrowContainer = document.createElement("div");
   arrowContainer.style.position = "absolute";
-  arrowContainer.style.top = "20px";
-  arrowContainer.style.right = "20px";
+  arrowContainer.style.top = "40px";
+  arrowContainer.style.right = "40px";
   arrowContainer.style.display = "flex";
   arrowContainer.style.flexDirection = "column";
   arrowContainer.style.alignItems = "center";
 
   const arrow = document.createElement("div");
-  arrow.innerHTML = "&#8594;"; // Tanda panah ke kanan
-  arrow.style.fontSize = "60px";
-  arrow.style.color = "white";
+  arrow.innerHTML = "➤";
+  arrow.style.fontSize = "64px";
+  arrow.style.color = "#FFD700";
+  arrow.style.fontWeight = "bold";
+  arrow.style.textShadow = "0 0 15px rgba(255, 215, 0, 0.8)";
+  arrow.style.animation = "slideArrow 2s ease-in-out infinite";
 
   const geserText = document.createElement("p");
-  geserText.textContent = "Geser";
-  geserText.style.fontSize = "36px";
-  geserText.style.margin = "0";
-  geserText.style.color = "white";
+  geserText.textContent = "GESER";
+  geserText.style.fontSize = "24px";
+  geserText.style.margin = "10px 0 0 0";
+  geserText.style.color = "#FFFFFF";
+  geserText.style.fontWeight = "700";
+  geserText.style.letterSpacing = "2px";
+  geserText.style.textShadow = "0 2px 6px rgba(0, 0, 0, 0.8)";
 
   arrowContainer.appendChild(arrow);
   arrowContainer.appendChild(geserText);
 
+  // Simple animation
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes slideArrow {
+      0%, 100% { transform: translateX(0); opacity: 1; }
+      50% { transform: translateX(10px); opacity: 0.8; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  tempDiv.appendChild(decorLines);
   tempDiv.appendChild(contentWrapper);
   tempDiv.appendChild(arrowContainer);
 
@@ -1160,6 +1234,7 @@ function downloadSurahDetail(surah) {
     scale: 1,
   }).then((canvas) => {
     document.body.removeChild(tempDiv);
+    document.head.removeChild(style);
 
     const link = document.createElement("a");
     link.download = `${surah.namaLatin}-Detail.png`;
